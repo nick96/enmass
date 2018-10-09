@@ -55,7 +55,7 @@ func getGroupStats(group ContactGroup) {
 	fmt.Printf("Group: %s\nID: %s\n%d members\n%d phone numbers\n%d emails\n",
 		group.Name, id, memberCount, phoneNumberCount, emailCount)
 
-	for _, member := range  members {
+	for _, member := range members {
 		fmt.Printf("%s (%d phone numbers, %d emails)\n", member.Name, len(member.GetPhoneNumbers()), len(member.GetEmails()))
 	}
 }
@@ -88,7 +88,6 @@ func checkGroup(group ContactGroup) {
 	}
 }
 
-
 // Do a send action on the given group
 func doSendAction(group ContactGroup, action GroupAction) {
 	msg, err := readMessage()
@@ -110,11 +109,38 @@ func doSendAction(group ContactGroup, action GroupAction) {
 			group.Name, len(group.GetMembers()), sender)
 		answer, err := reader.ReadString('\n')
 		if err != nil {
-			log.Fatalf("There was a problem reading the answer: %v\n", err)
+			log.Fatalf("There was a problem reading the answer: %v", err)
 		}
 
-
 		if strings.ToLower(strings.TrimSpace(answer)) == "y" {
+			fmt.Fprintf(os.Stderr, "Do you wish to add a signature to the end of the message? [y/N] ")
+			answer, err := reader.ReadString('\n')
+			if err != nil {
+				log.Fatalf("There was a problem reading the answer: %v", err)
+			}
+
+			if strings.ToLower(strings.TrimSpace(answer)) == "y" {
+				signature := os.Getenv("TEXT_MSG_SIGNATURE")
+				if len(signature) == 0 {
+					fmt.Fprintln(os.Stderr, "No signature was found")
+					os.Exit(1)
+				} else {
+					msg = strings.TrimRight(msg, "\n")
+					msg = fmt.Sprintf("%s\n%s", msg, signature)
+
+					fmt.Fprintln(os.Stderr, "Message to be sent:")
+					fmt.Fprintln(os.Stderr, msg)
+					fmt.Fprint(os.Stderr, "Is this okay? [y/N] ")
+					answer, err := reader.ReadString('\n')
+					if err != nil {
+						log.Fatalf("There was a problem reading the answer: %v", err)
+					}
+					if strings.TrimSpace(strings.ToLower(answer)) != "y" {
+						os.Exit(1)
+					}
+				}
+			}
+
 			sendTextMessage(group, msg, sender, twilioSid, twilioToken, twilioUrl)
 		} else {
 			log.Println("Text message has been cancelled")
