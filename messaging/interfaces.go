@@ -2,6 +2,8 @@ package messaging
 
 import "net/http"
 
+//go:generate mockgen -destination=../mocks/messaging_mocks.go -package mock github.com/nick96/enmass/messaging Message,Authentication,HttpClient
+
 type Message interface {
 	GetSender() string
 	GetBody() string
