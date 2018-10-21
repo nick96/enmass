@@ -108,9 +108,14 @@ func (g *GoogleContactGroup) getMembers() []*GooglePerson {
 	peopleService := people.NewPeopleService(g.service)
 	resName := string("contactGroups/" + g.getGroupID())
 
-	group, err := groupService.Get(resName).Do()
+	group, err := groupService.Get(resName).MaxMembers(100).Do()
 	if err != nil {
 		log.Fatalf("Could not get group: %v", err)
+	}
+
+	// Try again if we didn't get all the members
+	if group.MemberCount > 100 {
+		group, err = groupService.Get(resName).MaxMembers(group.MemberCount).Do()
 	}
 
 	var members []*GooglePerson
