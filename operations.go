@@ -1,26 +1,22 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"github.com/nick96/enmass/messaging"
-	"github.com/nick96/enmass/peopleapi"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/nick96/enmass/messaging"
+	"github.com/nick96/enmass/peopleapi"
 )
 
-type RestAuth struct {
-	Sid    string
-	Token  string
-	Url    string
-	Sender string
-}
-
-func GetGroupStats(group peopleapi.ContactGroup) {
+// GetGroupStats summarises group info (i.e. id, number of members,
+// phone numbers and emails) then summarises the contact info for each
+// member.
+func GetGroupStats(group peopleapi.ContactGroup) error {
 	members := group.GetMembers()
-	id := group.GetGroupId()
+	id := group.GetGroupID()
 	memberCount := len(members)
 	phoneNumberCount := len(group.GetPhoneNumbers())
 	emailCount := len(group.GetEmails())
@@ -29,12 +25,17 @@ func GetGroupStats(group peopleapi.ContactGroup) {
 		group.GetName(), id, memberCount, phoneNumberCount, emailCount)
 
 	for _, member := range members {
-		fmt.Printf("%s (%d phone numbers, %d emails)\n", member.GetName(), len(member.GetPhoneNumbers()),
+		fmt.Printf("%s (%d phone numbers, %d emails)\n", member.GetName(),
+			len(member.GetPhoneNumbers()),
 			len(member.GetEmails()))
 	}
+
+	return nil
 }
 
-func CheckGroup(group peopleapi.ContactGroup) {
+// CheckGroup checks that all members of a group have at least one
+// email and phone phone number.
+func CheckGroup(group peopleapi.ContactGroup) error {
 	for _, member := range group.GetMembers() {
 		if len(member.GetEmails()) == 0 {
 			fmt.Fprintf(os.Stderr, "%s has not email\n", member.GetName())
@@ -44,111 +45,81 @@ func CheckGroup(group peopleapi.ContactGroup) {
 			fmt.Fprintf(os.Stderr, "%s has no phone numbers\n", member.GetName())
 		}
 	}
+
+	return nil
 }
 
-// Do a send action on the given group
-func DoSendAction(group peopleapi.ContactGroup, action GroupAction, restAuth RestAuth) {
-	msg, err := readMessage()
-	if err != nil {
-		log.Fatalf("Could not read message: %v", err)
-	}
-
+// DoSendAction performs a send action, the specifics of which are
+// determined by the value of ACTION.
+func DoSendAction(group peopleapi.ContactGroup, action GroupAction,
+	twilioSid string, twilioToken string, phone string, email string,
+	msg string) error {
 	switch action {
 	case EMAIL:
-		sendEmail(group, msg)
+		sendEmail(group, msg, email)
 	case TEXT:
-		reader := bufio.NewReader(os.Stdin)
-		fmt.Fprintf(os.Stderr, "Are you sure you want to send a text message to %s (%d members) from %s? [y/N] ",
-			group.GetName(), len(group.GetMembers()), restAuth.Sender)
-		answer, err := reader.ReadString('\n')
-		if err != nil {
-			log.Fatalf("There was a problem reading the answer: %v", err)
-		}
-
-		if strings.ToLower(strings.TrimSpace(answer)) == "y" {
-			fmt.Fprintf(os.Stderr, "Do you wish to add a signature to the end of the message? [y/N] ")
-			answer, err := reader.ReadString('\n')
-			if err != nil {
-				log.Fatalf("There was a problem reading the answer: %v", err)
-			}
-
-			if strings.ToLower(strings.TrimSpace(answer)) == "y" {
-				signature := os.Getenv("TEXT_MSG_SIGNATURE")
-				if len(signature) == 0 {
-					fmt.Fprintln(os.Stderr, "No signature was found")
-					os.Exit(1)
-				} else {
-					msg = strings.TrimRight(msg, "\n")
-					msg = fmt.Sprintf("%s\n%s", msg, signature)
-
-					fmt.Fprintln(os.Stderr, "Message to be sent:")
-					fmt.Fprintln(os.Stderr, msg)
-					fmt.Fprint(os.Stderr, "Is this okay? [y/N] ")
-					answer, err := reader.ReadString('\n')
-					if err != nil {
-						log.Fatalf("There was a problem reading the answer: %v", err)
-					}
-					if strings.TrimSpace(strings.ToLower(answer)) != "y" {
-						os.Exit(1)
-					}
-				}
-			}
-
-			sendTextMessage(group, msg, restAuth.Sender, restAuth.Sid, restAuth.Token, restAuth.Url)
-		} else {
-			log.Println("Text message has been cancelled")
-		}
+		sendTextMessage(group, msg, phone, twilioSid, twilioToken)
 	}
+
+	return nil
 }
 
-// Do a get action on the given group
-func DoGetAction(group peopleapi.ContactGroup, action GroupAction) {
+// DoGetAction performs a get action, the specifics of which are
+// determined by the value of ACTION.
+func DoGetAction(group peopleapi.ContactGroup, action GroupAction) error {
 	switch action {
 	case EMAIL:
 		var emails []string
-		for _, email:= range group.GetEmails() {
-			emails = append(emails, email.Value)
+		for _, email := range group.GetEmails() {
+			emails = append(emails, string(email))
 		}
-		fmt.Fprintf(os.Stderr, "Found %d emails (%d members)\n", len(emails), len(group.GetMembers()))
+
+		fmt.Fprintf(os.Stderr, "Found %d emails (%d members)\n",
+			len(emails), len(group.GetMembers()))
 		fmt.Println(strings.Join(emails, "; "))
 	case TEXT:
 		phoneNumbers := group.GetPhoneNumbers()
-		fmt.Fprintf(os.Stderr, "Found %d phone numbers (%d members)\n", len(phoneNumbers), len(group.GetMembers()))
+		fmt.Fprintf(os.Stderr, "Found %d phone numbers (%d members)\n",
+			len(phoneNumbers), len(group.GetMembers()))
 
 		for _, phoneNumber := range phoneNumbers {
-			fmt.Println(phoneNumber.CanonicalForm)
+			fmt.Println(phoneNumber)
 		}
 	default:
 		log.Fatalf("%v is an unkown action", action)
 	}
 
+	return nil
 }
 
-// Send a text message to every member of the group
-func sendTextMessage(group peopleapi.ContactGroup, msg string, sender string, sid string, token string, twilioUrl string) {
+// sendTextMessage sends a text message to every member of the group
+func sendTextMessage(group peopleapi.ContactGroup, msg string, sender string, sid string,
+	token string)  error {
 	msgData := messaging.TwilioMessage{
-		Body: msg,
+		Body:   msg,
 		Sender: sender,
 	}
 
 	auth := messaging.TwilioAuth{
-		Sid: sid,
+		Sid:   sid,
 		Token: token,
 	}
 
-
 	for _, member := range group.GetMembers() {
 		for _, phoneNumber := range member.GetPhoneNumbers() {
-			msgData.Recipient = phoneNumber.CanonicalForm
+			msgData.Recipient = string(phoneNumber)
 			err := messaging.SendText(&http.Client{}, msgData, auth)
 			if err != nil {
-				log.Printf("Could not send text message to %s on %s: %v", member.GetName(), phoneNumber, err)
+				log.Printf("Could not send text message to %s on %s: %v",
+					member.GetName(), phoneNumber, err)
 			}
 		}
 	}
+
+	return nil
 }
 
-// Send an email to every member of the group
-func sendEmail(group peopleapi.ContactGroup, msg string) {
+// sendEmail sends an email to every member of the group
+func sendEmail(group peopleapi.ContactGroup, msg string, email string) error {
 	panic("Not implemented")
 }

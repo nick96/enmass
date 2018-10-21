@@ -1,39 +1,38 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"io"
 	"os"
 	"strings"
+
+	"github.com/nick96/witheditor"
 )
 
-// Representation of the type of action that can be done
+// GroupActionType representats of the type of action that can be done
 type GroupActionType int
 
+// Actions that can be performed on groups
 const (
 	NOGROUPACTIONTYPE GroupActionType = iota
-	// GroupAction to get some information about the group
 	GET
-	// GroupAction to send something to the group
 	SEND
 	CHECK
 	STAT
 )
 
-// Representation of the actions that can be done.
+// GroupAction representation of the actions that can be done.
 // Combined with the GroupActionType, this tells us what we're doing.
 type GroupAction int
 
+// Actions performed
 const (
 	NOGROUPACTION GroupAction = iota
-	// GroupAction on group emails
 	EMAIL
-	// GroupAction on group phone numbers.
-	// TEXT is used because the sending action will send a text
 	TEXT
 )
 
+// CmdLineArgs represents the command line arguments that can be
+// given.
 type CmdLineArgs struct {
 	CredentialsPath string
 	TokenPath       string
@@ -78,7 +77,8 @@ func parseArgs(args []string) CmdLineArgs {
 	}
 
 	if (actionType == CHECK || actionType == STAT) && len(args) > 2 {
-		fmt.Fprintln(os.Stderr, "Ignoring trailing junk after argument", strings.Join(args[2:], " "))
+		fmt.Fprintln(os.Stderr, "Ignoring trailing junk after argument",
+			strings.Join(args[2:], " "))
 	} else if actionType == GET || actionType == SEND {
 		if len(args) > 2 {
 			switch strings.ToLower(args[2]) {
@@ -87,7 +87,8 @@ func parseArgs(args []string) CmdLineArgs {
 			case "text":
 				action = TEXT
 			default:
-				fmt.Fprintf(os.Stderr, "%s not not a know argument for get or send\n", args[2])
+				fmt.Fprintf(os.Stderr, "%s not not a know argument for get or send\n",
+					args[2])
 			}
 		} else {
 			fmt.Fprintln(os.Stderr, "get and send actions required additional arguments")
@@ -156,24 +157,30 @@ func parseArgs(args []string) CmdLineArgs {
 	}
 }
 
-// Print out tool usage
+// Usage prints out tool usage
 func Usage() {
 	fmt.Fprint(os.Stderr, `Usage: enmass <group> [arguments] [options]
   group is the name of the contact group we will be operating on.
 
   Arguments:
-    check: Check that all of the members of <group> have at least one email and phone number
-    stat:  Print out the stats of a group (nuber of members, emails and phone numbers, etc.)
-    get:   Perform a get operation on the group (this requires a second argument of "email" or "text")
-    send:  Perform a send operation on the group (this requires a second argument of "email" or "text")
+    check: Check that all of the members of <group> have at least one
+           email and phone number
+    stat: Print out the stats of a group (nuber of members, emails and
+          phone numbers, etc.)
+    get: Perform a get operation on the group (this requires a second
+         argument of "email" or "text")
+    send: Perform a send operation on the group (this requires a
+          second argument of "email" or "text")
 
   Options:
     --credentials/-c: Path to the credentials file
     --Token/-t:       Path to the Token file
 
-  The usage of the "get" and "send" arguments requires an additional argument of "email" or "text". This is used to
-  specify what operation is to be performed. "email" indicates the operation is to be on emails and "text" on phone
-  numbers. The possible combinations are:
+  The usage of the "get" and "send" arguments requires an additional
+  argument of "email" or "text". This is used to specify what
+  operation is to be performed. "email" indicates the operation is to
+  be on emails and "text" on phone numbers. The possible combinations
+  are:
 
     get email:  Get all the emails for the group
     get text:   Get all the phone numbers for the group
@@ -184,20 +191,7 @@ func Usage() {
 
 // Read a message from standard input until the EOF character is read.
 func readMessage() (string, error) {
-	var msg string
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Println("Message:")
+	return witheditor.OpenEditor("", os.Getenv("ENMASS_SIGNATURE"),
+		"Enter the message you wish to send to the group.")
 
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return "", err
-		}
-		msg = fmt.Sprintf("%s%s\n", msg, line)
-	}
-
-	return msg, nil
 }

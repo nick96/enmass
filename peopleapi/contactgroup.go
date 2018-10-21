@@ -7,14 +7,17 @@ import (
 	"strings"
 )
 
+// GoogleContactGroup is an implementation of the ContactGroup
+// interface, specifically representing a contact group from Google
+// Contacts.
 type GoogleContactGroup struct {
 	service *people.Service
 	Name    string
-	groupId string
+	groupID GroupID
 	members []Person
 }
 
-// Create a new contact group representation.
+// NewGoogleContactGroup creates a new contact group representation.
 //
 // Getting the group ID and members is deferred to when they are first requested.
 func NewGoogleContactGroup(service *people.Service, groupName string) ContactGroup {
@@ -24,17 +27,20 @@ func NewGoogleContactGroup(service *people.Service, groupName string) ContactGro
 	}
 }
 
+// GetName gets the group's name
 func (g *GoogleContactGroup) GetName() string {
 	return g.Name
 }
 
-func (g *GoogleContactGroup) GetGroupId() string {
-	if len(g.groupId) == 0 {
-		g.groupId = g.getGroupId()
+// GetGroupID gets the groups ID
+func (g *GoogleContactGroup) GetGroupID() GroupID {
+	if len(g.groupID) == 0 {
+		g.groupID = g.getGroupID()
 	}
-	return g.groupId
+	return g.groupID
 }
 
+// GetMembers gets all members of a group
 func (g *GoogleContactGroup) GetMembers() []Person {
 	if len(g.members) == 0 {
 		for _, member := range g.getMembers() {
@@ -44,26 +50,27 @@ func (g *GoogleContactGroup) GetMembers() []Person {
 	return g.members
 }
 
-func (g *GoogleContactGroup) GetEmails() []*people.EmailAddress {
-	var emails []*people.EmailAddress
+// GetEmails gets every email of every member of the group.
+func (g *GoogleContactGroup) GetEmails() []Email {
+	var emails []Email
 	for _, member := range g.GetMembers() {
 		emails = append(emails, member.GetEmails()...)
 	}
 	return emails
 }
 
-func (g *GoogleContactGroup) GetPhoneNumbers() []*people.PhoneNumber {
-	var phoneNumbers []*people.PhoneNumber
+// GetPhoneNumbers gets all the phone numbers in a contact group
+func (g *GoogleContactGroup) GetPhoneNumbers() []PhoneNumber {
+	var phoneNumbers []PhoneNumber
 	for _, member := range g.GetMembers() {
 		phoneNumbers = append(phoneNumbers, member.GetPhoneNumbers()...)
 	}
 	return phoneNumbers
 }
 
-// Get the group's ID.
-//
-// This is a package private function that does a network call to retrieve the group ID.
-func (g *GoogleContactGroup) getGroupId() string {
+// This is a package private function that does a network call to
+// retrieve the group ID.
+func (g *GoogleContactGroup) getGroupID() GroupID {
 	service := people.NewContactGroupsService(g.service)
 	list := service.List()
 	var nextPage googleapi.Field
@@ -79,7 +86,7 @@ func (g *GoogleContactGroup) getGroupId() string {
 
 		for _, group := range resp.ContactGroups {
 			if group.FormattedName == g.Name {
-				return strings.Split(group.ResourceName, "/")[1]
+				return GroupID(strings.Split(group.ResourceName, "/")[1])
 			}
 		}
 
@@ -99,7 +106,7 @@ func (g *GoogleContactGroup) getGroupId() string {
 func (g *GoogleContactGroup) getMembers() []*GooglePerson {
 	groupService := people.NewContactGroupsService(g.service)
 	peopleService := people.NewPeopleService(g.service)
-	resName := "contactGroups/" + g.getGroupId()
+	resName := string("contactGroups/" + g.getGroupID())
 
 	group, err := groupService.Get(resName).Do()
 	if err != nil {
@@ -109,7 +116,8 @@ func (g *GoogleContactGroup) getMembers() []*GooglePerson {
 	var members []*GooglePerson
 	if len(group.MemberResourceNames) > 0 {
 		membersGet := peopleService.GetBatchGet().ResourceNames(group.MemberResourceNames...)
-		membersGet = membersGet.RequestMaskIncludeField("person.names,person.phoneNumbers,person.emailAddresses")
+		membersGet = membersGet.RequestMaskIncludeField("person.names,person.phoneNumbers," +
+			"person.emailAddresses")
 		resp, err := membersGet.Do()
 
 		if err != nil {

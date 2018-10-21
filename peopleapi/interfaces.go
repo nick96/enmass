@@ -1,22 +1,33 @@
 package peopleapi
 
-import "google.golang.org/api/people/v1"
+// GroupID represents a group ID.
+type GroupID string
 
+// Email represents a persons email
+type Email string
+
+// PhoneNumber represents a phone number in its cannonical form
+type PhoneNumber string
+
+// ContactGroup is the contact of methods that must be implemented for
+// something to be considered a contact group
 type ContactGroup interface {
 	GetName() string
-	GetGroupId() string
+	GetGroupID() GroupID
 	GetMembers() []Person
-	GetEmails() []*people.EmailAddress
-	GetPhoneNumbers() []*people.PhoneNumber
+	GetEmails() []Email
+	GetPhoneNumbers() []PhoneNumber
 }
 
+// Person is the contact of methods that must be implemented for
+// something to be considered a person
 type Person interface {
 	GetName() string
 	IsMember(group ContactGroup) bool
-	GetMemberships() []*people.Membership
-	GetPhoneNumbers() []*people.PhoneNumber
-	GetEmails() []*people.EmailAddress
-	SetMemberships(memberships []*people.Membership)
-	SetPhoneNumbers(phoneNumbers []*people.PhoneNumber)
-	SetEmailAddresses(emails []*people.EmailAddress)
+	GetMemberships() []GroupID
+	GetPhoneNumbers() []PhoneNumber
+	GetEmails() []Email
+	SetMemberships(memberships []GroupID)
+	SetPhoneNumbers(phoneNumbers []PhoneNumber)
+	SetEmailAddresses(emails []Email)
 }
