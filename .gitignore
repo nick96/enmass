@@ -2,3 +2,4 @@ credentials.json
 .env
 token.json
 enmass
+/.env-test
