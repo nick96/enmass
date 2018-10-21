@@ -1,4 +1,4 @@
-package main
+package peopleapi
 
 import (
 	"google.golang.org/api/googleapi"
@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-type Person struct {
+type GooglePerson struct {
 	service *people.PeopleConnectionsService
 	Name string
 	memberships []*people.Membership
@@ -15,15 +15,19 @@ type Person struct {
 }
 
 // Create a representation of a person.
-func NewPerson(service *people.Service, name string) Person {
-	person := Person{}
-	person.service = people.NewPeopleConnectionsService(service)
-	person.Name = name
-	return person
+func NewGooglePerson(service *people.Service, name string) GooglePerson {
+	return GooglePerson{
+		service: people.NewPeopleConnectionsService(service),
+		Name: name,
+	}
+}
+
+func (p *GooglePerson) GetName () string {
+	return p.Name
 }
 
 // Check if a person is a member of the given contact group.
-func (p *Person) IsMember(grp *ContactGroup) bool {
+func (p *GooglePerson) IsMember(grp ContactGroup) bool {
 	for _, membership := range p.GetMemberships() {
 		if membership.ContactGroupMembership.ContactGroupId == grp.GetGroupId() {
 			return true
@@ -33,7 +37,7 @@ func (p *Person) IsMember(grp *ContactGroup) bool {
 }
 
 // Get the memberships a person has.
-func (p *Person) GetMemberships() []*people.Membership {
+func (p *GooglePerson) GetMemberships() []*people.Membership {
 	if len(p.memberships) == 0 {
 		p.setFields()
 	}
@@ -41,7 +45,7 @@ func (p *Person) GetMemberships() []*people.Membership {
 }
 
 // Get the phone numbers a person has associated with them.
-func (p *Person) GetPhoneNumbers() []*people.PhoneNumber {
+func (p *GooglePerson) GetPhoneNumbers() []*people.PhoneNumber {
 	if len(p.phoneNumbers) == 0 {
 		p.setFields()
 	}
@@ -49,7 +53,7 @@ func (p *Person) GetPhoneNumbers() []*people.PhoneNumber {
 }
 
 // Get the emails a person has associated with them.
-func (p *Person) GetEmails() []*people.EmailAddress {
+func (p *GooglePerson) GetEmails() []*people.EmailAddress {
 	if len(p.emails) == 0 {
 		p.setFields()
 	}
@@ -59,7 +63,7 @@ func (p *Person) GetEmails() []*people.EmailAddress {
 // Set the memberships a person has.
 //
 // This is generally used for creating a person's presentation.
-func (p *Person) SetMemberships(memberships []*people.Membership) {
+func (p *GooglePerson) SetMemberships(memberships []*people.Membership) {
 	p.memberships = memberships
 }
 
@@ -67,15 +71,24 @@ func (p *Person) SetMemberships(memberships []*people.Membership) {
 //
 // This is generally used for creating a person's presentation.
 
-func (p *Person) SetPhoneNumbers(phoneNumbers []*people.PhoneNumber) {
+func (p *GooglePerson) SetPhoneNumbers(phoneNumbers []*people.PhoneNumber) {
 	p.phoneNumbers = phoneNumbers
 }
 
 // Set the email addresses associated with a person.
 //
 // This is generally used for creating a person's presentation.
-func (p *Person) SetEmailAddresses(emailAddresses []*people.EmailAddress) {
+func (p *GooglePerson) SetEmailAddresses(emailAddresses []*people.EmailAddress) {
 	p.emails = emailAddresses
+}
+
+// Convert a GooglePerson type from the peopleapi API library to the person type of this library.
+func fromPerson(peoplePerson *people.Person, service *people.Service) GooglePerson {
+	person := NewGooglePerson(service, peoplePerson.Names[0].DisplayName)
+	person.SetEmailAddresses(peoplePerson.EmailAddresses)
+	person.SetMemberships(peoplePerson.Memberships)
+	person.SetPhoneNumbers(peoplePerson.PhoneNumbers)
+	return person
 }
 
 // Set the person's information fields.
@@ -83,7 +96,7 @@ func (p *Person) SetEmailAddresses(emailAddresses []*people.EmailAddress) {
 // This is a package private function used by the getter functions when a field is empty. As the information for all
 // the fields is stored in the same place is makes sense to grab it all when one of them is requested to save on
 // network calls.
-func (p *Person) setFields() {
+func (p *GooglePerson) setFields() {
 	list := p.service.List("people/me")
 	list = list.RequestMaskIncludeField("person.names,person.memberships,person.phoneNumbers,person.emailAddresses")
 

@@ -72,7 +72,7 @@ func parseArgs(args []string) CmdLineArgs {
 	case "send":
 		actionType = SEND
 	default:
-		fmt.Fprintf(os.Stderr,"%s is not a known argument\n", args[1])
+		fmt.Fprintf(os.Stderr, "%s is not a known argument\n", args[1])
 		Usage()
 		os.Exit(1)
 	}
@@ -89,7 +89,7 @@ func parseArgs(args []string) CmdLineArgs {
 			default:
 				fmt.Fprintf(os.Stderr, "%s not not a know argument for get or send\n", args[2])
 			}
-		} else{
+		} else {
 			fmt.Fprintln(os.Stderr, "get and send actions required additional arguments")
 			Usage()
 			os.Exit(1)
@@ -118,10 +118,10 @@ func parseArgs(args []string) CmdLineArgs {
 					Usage()
 					os.Exit(1)
 				}
-			} else if strings.HasPrefix(arg, "--token") {
+			} else if strings.HasPrefix(arg, "--Token") {
 				if !tokenSet {
 					tokenSet = true
-					credentialsPath = strings.TrimPrefix("--token", arg)
+					credentialsPath = strings.TrimPrefix("--Token", arg)
 				} else {
 					fmt.Fprintf(os.Stderr, "Token path is already set")
 					Usage()
@@ -148,11 +148,11 @@ func parseArgs(args []string) CmdLineArgs {
 	}
 
 	return CmdLineArgs{
-		GroupName:groupName,
-		ActionType:actionType,
-		Action:action,
-		CredentialsPath:credentialsPath,
-		TokenPath:tokenPath,
+		GroupName:       groupName,
+		ActionType:      actionType,
+		Action:          action,
+		CredentialsPath: credentialsPath,
+		TokenPath:       tokenPath,
 	}
 }
 
@@ -169,7 +169,7 @@ func Usage() {
 
   Options:
     --credentials/-c: Path to the credentials file
-    --token/-t:       Path to the token file
+    --Token/-t:       Path to the Token file
 
   The usage of the "get" and "send" arguments requires an additional argument of "email" or "text". This is used to
   specify what operation is to be performed. "email" indicates the operation is to be on emails and "text" on phone
