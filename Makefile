@@ -1,23 +1,18 @@
-.PHONY: build test generate generate-peopleapi generate-messaging test-cli test-messaging test-peopleapi
+PROJ="github.com/nick96/enmass"
+COVER="cover.out"
+
+.PHONY: build test generate coverage
 
 build:
 	go build
 
-test: generate test-cli test-messaging test-peopleapi
+test: generate
+	@go test ${PROJ} ${PROJ}/messaging ${PROJ}/peopleapi
 
-generate: generate-messaging generate-peopleapi
+generate: 
+	@go generate ${PROJ} ${PROJ}/messaging ${PROJ}/peopleapi
 
-generate-peopleapi:
-	@cd peopleapi && go generate
+coverage: 
+	@go test ${PROJ} ${PROJ}/messaging ${PROJ}/peopleapi -coverprofile=${COVER}
+	@go tool cover -html=${COVER}
 
-generate-messaging:
-	@cd messaging && go generate
-
-test-cli: generate
-	@go test
-
-test-messaging: generate-messaging
-	@cd messaging && go test
-
-test-peopleapi: generate-peopleapi
-	@cd peopleapi && go test
