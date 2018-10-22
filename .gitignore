@@ -4,3 +4,5 @@ token.json
 enmass
 .env-test
 mocks/
+/debug
+.idea
