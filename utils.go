@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/nick96/witheditor"
+	"github.com/nick96/enmass/witheditor"
 )
 
 // GroupActionType representats of the type of action that can be done
@@ -191,7 +191,9 @@ func Usage() {
 
 // Read a message from standard input until the EOF character is read.
 func readMessage() (string, error) {
-	return witheditor.OpenEditor("", os.Getenv("ENMASS_SIGNATURE"),
+	return witheditor.WithEditor(
+		"vim",
+		os.Getenv("ENMASS_SIGNATURE"),
 		"Enter the message you wish to send to the group.")
 
 }
