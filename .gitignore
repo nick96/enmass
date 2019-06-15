@@ -6,3 +6,4 @@ mocks/
 /debug
 .idea
 .secret/
+cover.txt
