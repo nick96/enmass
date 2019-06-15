@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/nick96/enmass/peopleapi"
-	"github.com/nick96/gapiauth"
+	"github.com/nick96/enmass/peopleapi"	
+	"github.com/nick96/enmass/gapiauth"
 	"google.golang.org/api/people/v1"
 )
 
