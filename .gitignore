@@ -1,4 +1,3 @@
-credentials.json
 .env
 token.json
 enmass
@@ -6,3 +5,4 @@ enmass
 mocks/
 /debug
 .idea
+.secret/
