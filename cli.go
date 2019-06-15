@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/nick96/enmass/peopleapi"	
 	"github.com/nick96/enmass/gapiauth"
+	"github.com/nick96/enmass/peopleapi"
 	"google.golang.org/api/people/v1"
 )
 
@@ -20,7 +20,7 @@ func main() {
 	args := os.Args[1:]
 	parsed := parseArgs(args)
 
-	auth := gapiauth.NewAuth(parsed.CredentialsPath, parsed.TokenPath, people.ContactsScope)
+	auth := gapiauth.NewAuth(parsed.CredentialsPath, parsed.TokenPath, []string{people.ContactsScope})
 	client, err := auth.GetClient()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v", err)
