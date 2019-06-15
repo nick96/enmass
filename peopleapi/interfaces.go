@@ -1,7 +1,7 @@
 package peopleapi
 
 
-//go:generate mockgen -destination=../../mocks/peopleapi_mocks.go -package=mocks github.com/nick96/enmass/pkg/peopleapi ContactGroup,Person
+//go:generate mockgen -destination=../mocks/peopleapi_mocks.go -package=mocks github.com/nick96/enmass/peopleapi ContactGroup,Person
 
 // GroupID represents a group ID.
 type GroupID string

@@ -2,9 +2,9 @@ package peopleapi
 
 import (
 	"google.golang.org/api/googleapi"
+	"google.golang.org/api/people/v1"
 	"log"
 	"strings"
-	"google.golang.org/api/people/v1"
 )
 
 // GoogleContactGroup is an implementation of the ContactGroup
